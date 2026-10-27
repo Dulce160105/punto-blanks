@@ -10,8 +10,13 @@ create table if not exists public.app_state (
   data       jsonb not null,
   updated_at timestamptz not null default now(),
   constraint app_state_es_objeto check (jsonb_typeof(data) = 'object'),
-  constraint app_state_tamano    check (pg_column_size(data) < 5000000)
+  constraint app_state_tamano    check (pg_column_size(data) < 25000000)
 );
+
+-- Si su tabla ya existía con el límite anterior (5 MB), esto lo amplía a 25 MB.
+-- (El sistema guarda los datos comprimidos, por lo que 25 MB equivalen a cientos de miles de ventas.)
+alter table public.app_state drop constraint if exists app_state_tamano;
+alter table public.app_state add  constraint app_state_tamano check (pg_column_size(data) < 25000000);
 
 -- 2) Historial de respaldos automáticos (una copia por sesión de trabajo, 60 días)
 create table if not exists public.app_state_history (
